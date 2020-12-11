@@ -17,7 +17,7 @@
  * @file
  */
 
-namespace MediaWiki\Extension\BoilerPlate;
+namespace MediaWiki\Extension\WikibaseExampleData;
 
 class Hooks implements \MediaWiki\Hook\BeforePageDisplayHook {
 
@@ -27,11 +27,11 @@ class Hooks implements \MediaWiki\Hook\BeforePageDisplayHook {
 	 * @param \Skin $skin
 	 */
 	public function onBeforePageDisplay( $out, $skin ) : void {
-		$config = $out->getConfig();
-		if ( $config->get( 'BoilerPlateVandalizeEachPage' ) ) {
-			$out->addHTML( '<p>BoilerPlate was here</p>' );
-			$out->addModules( 'oojs-ui-core' );
-		}
+		// $config = $out->getConfig();
+		// if ( $config->get( 'BoilerPlateVandalizeEachPage' ) ) {
+		// 	$out->addHTML( '<p>BoilerPlate was here</p>' );
+		// 	$out->addModules( 'oojs-ui-core' );
+		// }
 	}
 
 }
