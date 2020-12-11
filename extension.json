@@ -1,17 +1,17 @@
 {
-	"name": "BoilerPlate",
+	"name": "WikibaseExampleData",
 	"author": [
-		"Your Name"
+		"Addshore"
 	],
-	"url": "https://www.mediawiki.org/wiki/Extension:BoilerPlate",
-	"descriptionmsg": "boilerplate-desc",
+	"url": "https://www.mediawiki.org/wiki/Extension:WikibaseExampleData",
+	"descriptionmsg": "wikibaseexampledata-desc",
 	"license-name": "GPL-2.0-or-later",
 	"type": "other",
 	"requires": {
 		"MediaWiki": ">= 1.32.0"
 	},
 	"AutoloadNamespaces": {
-		"MediaWiki\\Extension\\BoilerPlate\\": "includes/"
+		"MediaWiki\\Extension\\WikibaseExampleData\\": "includes/"
 	},
 	"config": {
 		"BoilerPlateEnableFoo": {
@@ -24,29 +24,17 @@
 		}
 	},
 	"HookHandlers": {
-		"BoilerPlateHooks": {
-			"class": "MediaWiki\\Extension\\BoilerPlate\\Hooks"
+		"WikibaseExampleDataHooks": {
+			"class": "MediaWiki\\Extension\\WikibaseExampleData\\Hooks"
 		}
 	},
 	"Hooks": {
-		"BeforePageDisplay": "BoilerPlateHooks"
+		"BeforePageDisplay": "WikibaseExampleDataHooks"
 	},
 	"MessagesDirs": {
-		"BoilerPlate": [
+		"WikibaseExampleData": [
 			"i18n"
 		]
-	},
-	"ResourceFileModulePaths": {
-		"localBasePath": "resources",
-		"remoteExtPath": "BoilerPlate/resources"
-	},
-	"ResourceModules": {
-		"ext.boilerPlate": {
-			"dependencies": [],
-			"messages": [],
-			"styles": [],
-			"scripts": []
-		}
 	},
 	"manifest_version": 2
 }
