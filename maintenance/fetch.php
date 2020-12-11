@@ -21,7 +21,7 @@ require_once "$IP/maintenance/Maintenance.php";
 // FIXME, maybe this shouldnt be a maint script at all...
 require_once __DIR__ . '/../vendor/autoload.php';
 
-class Run extends \Maintenance {
+class Fetch extends \Maintenance {
 	/**
 	 * @var \Wikibase\Api\WikibaseFactory
 	 */
@@ -168,5 +168,5 @@ class Run extends \Maintenance {
 
 }
 
-$maintClass = "MediaWiki\Extension\WikibaseExampleData\Maintenance\Run";
+$maintClass = "MediaWiki\Extension\WikibaseExampleData\Maintenance\Fetch";
 require_once RUN_MAINTENANCE_IF_MAIN;
