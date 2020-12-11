@@ -28,7 +28,7 @@ class Run extends \Maintenance {
 	private $wbFactory;
 	private $dataDir = __DIR__ . '/../data/';
 
-	private $properties = [
+	private $propertyIdStrrings = [
 		'P31', // instance of >>>>>
 		'P50', // author >>>>>
 		'P123', // publisher >>>>>>>
@@ -37,7 +37,7 @@ class Run extends \Maintenance {
 		'P5331', // OCLC id?
 	];
 
-	private $items = [
+	private $itemIdStrings = [
 		'Q40205', // Q40205, Cloud Atlas
 		'Q374204', // Q374204 , Life of Pi
 		'Q1199348', // Q1199348, The Long Dark Tea-Time of the Soul
@@ -64,10 +64,12 @@ class Run extends \Maintenance {
 
 	public function sync() {
 		$properties = $this->getProperties();
-		$items = $this->getItems( $this->items, $this->properties );
+		$items = $this->getItems( $this->itemIdStrings, $this->propertyIdStrrings );
 
 		$propertyIdsThatAreItems = $this->getPropertyIdsThatAreItem( $properties );
 		$secondaryItemIdsStringsToFetch = $this->findItemsNeededForMainSnaksOnItems( $items, $propertyIdsThatAreItems );
+		// Don't refetch items that we have already found as a primary item
+		$secondaryItemIdsStringsToFetch = array_diff( $secondaryItemIdsStringsToFetch, $this->itemIdStrings );
 		$secondaryItems = $this->getItems( $secondaryItemIdsStringsToFetch, [] );
 
 		$this->writeEntities( $properties );
@@ -88,7 +90,7 @@ class Run extends \Maintenance {
 	private function getProperties(){
 		$propertyLookup = $this->wbFactory->newPropertyLookup();
 		$properties = [];
-		foreach( $this->properties as $propertyIdToImport ) {
+		foreach( $this->propertyIdStrrings as $propertyIdToImport ) {
 			$property = $propertyLookup->getPropertyForId( new PropertyId( $propertyIdToImport ) );
 			$properties[] = $this->slimPropertyCopy( $property );
 		}
