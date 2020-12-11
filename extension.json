@@ -36,5 +36,12 @@
 			"i18n"
 		]
 	},
+	"RestRoutes": [
+		{
+			"path": "/wikibase-exampledata/v0/load",
+			"method": "POST",
+			"class": "MediaWiki\\Extension\\WikibaseExampleData\\RestApi"
+		}
+	],
 	"manifest_version": 2
 }

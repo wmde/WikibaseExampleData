@@ -51,6 +51,7 @@ class DataLoader {
 			$newIdString = $savedEntityRevision->getEntity()->getId()->getSerialization();
 			$this->idMap[ $sourceEntityId ] = $newIdString;
 		}
+		unset( $roundOneEntitiesToLoad );
 
 		// Get a new set of entity objects with adjusted IDs, including statements
 		$roundTwoEntitiesToLoad = $this->adjustIdsInEntities( $rawEntitiesToImport );
@@ -137,6 +138,7 @@ class DataLoader {
 		} elseif ( $mainSnak instanceof PropertyNoValueSnak ){
 			return new PropertyNoValueSnak( $propertyIdToUse );
 		}
+		die('ohnoes3');
 	}
 
 	private function getAllFiles() {
