@@ -3,6 +3,7 @@
 namespace MediaWiki\Extension\WikibaseExampleData\Maintenance;
 
 use MediaWiki\Extension\WikibaseExampleData\DataLoader;
+use Wikibase\Repo\WikibaseRepo;
 
 $IP = getenv( 'MW_INSTALL_PATH' );
 if ( $IP === false ) {
@@ -14,7 +15,9 @@ require_once "$IP/maintenance/Maintenance.php";
 class Load extends \Maintenance {
 
 	public function execute() {
-		$loader = new DataLoader();
+		$loader = new DataLoader(
+			WikibaseRepo::getDefaultInstance()->getStore()->getEntityStore()
+		);
 		$loader->execute();
 	}
 

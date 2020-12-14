@@ -16,45 +16,57 @@ use Wikibase\DataModel\Snak\PropertyValueSnak;
 use Wikibase\DataModel\Snak\PropertyNoValueSnak;
 use Wikibase\DataModel\Snak\PropertySomeValueSnak;
 use Wikibase\DataModel\Snak\Snak;
+use Wikibase\Lib\Store\EntityStore;
 
 class DataLoader {
 
 	private $dataDir = __DIR__ . '/../data/';
 
-	// Of OLD => NEW id
-	private $idMap = [];
+	private $entityStore;
+	private $deserailizer;
+
+	public function __construct( EntityStore $entityStore ) {
+		$this->entityStore = $entityStore;
+		$repo = WikibaseRepo::getDefaultInstance();
+		$this->deserailizer = $repo->getBaseDataModelDeserializerFactory()->newEntityDeserializer();
+	}
 
 	public function execute() {
 		// Mapping in all arrays is the original ID
-		$repo = WikibaseRepo::getDefaultInstance();
-		$deserailizer = $repo->getBaseDataModelDeserializerFactory()->newEntityDeserializer();
 		$files = $this->getAllFiles();
 
 		$rawEntitiesToImport = [];
 		foreach( $files as $file ) {
 			$rawJson = file_get_contents( $file );
-			$entity = $deserailizer->deserialize( json_decode( $rawJson, true ) );
+			$entity = $this->deserailizer->deserialize( json_decode( $rawJson, true ) );
 			$rawEntitiesToImport[$entity->getId()->getSerialization()] = $entity;
 		}
 
+		$this->importEntities( $rawEntitiesToImport, User::newSystemUser( 'WikibaseExampleDataImporter' ) );
+	}
+
+	public function importEntities( array $entitiesToImport, User $user ) {
+		// Old to New ids
+		$idMap = [];
+
 		// Get a first round of entities, ONLY with fingerprints, and with IDs removed...
-		$roundOneEntitiesToLoad = $this->getFingerprintOnlyEntities( $rawEntitiesToImport );
+		$roundOneEntitiesToLoad = $this->getFingerprintOnlyEntities( $entitiesToImport );
 
 		// Write the entities
 		foreach( $roundOneEntitiesToLoad as $sourceEntityId => $entity ) {
-			$savedEntityRevision = $repo->getStore()->getEntityStore()->saveEntity(
+			$savedEntityRevision = $this->entityStore->saveEntity(
 				$entity,
 				'Import base entity',
-				User::newSystemUser( 'WikibaseExampleDataImporter' ),
+				$user,
 				EDIT_NEW
 			);
 			$newIdString = $savedEntityRevision->getEntity()->getId()->getSerialization();
-			$this->idMap[ $sourceEntityId ] = $newIdString;
+			$idMap[ $sourceEntityId ] = $newIdString;
 		}
 		unset( $roundOneEntitiesToLoad );
 
 		// Get a new set of entity objects with adjusted IDs, including statements
-		$roundTwoEntitiesToLoad = $this->adjustIdsInEntities( $rawEntitiesToImport );
+		$roundTwoEntitiesToLoad = $this->adjustIdsInEntities( $entitiesToImport, $idMap );
 
 		// Write the entities again (this time with statements)
 		foreach( $roundTwoEntitiesToLoad as $sourceEntityId => $entity ) {
@@ -62,13 +74,13 @@ class DataLoader {
 				// Skip entities that would have no statements added
 				continue;
 			}
-			$savedEntityRevision = $repo->getStore()->getEntityStore()->saveEntity(
+			$savedEntityRevision = $this->entityStore->saveEntity(
 				$entity,
 				'Import statements',
-				User::newSystemUser( 'WikibaseExampleDataImporter' )
+				$user
 			);
 			$newIdString = $savedEntityRevision->getEntity()->getId()->getSerialization();
-			$this->idMap[ $sourceEntityId ] = $newIdString;
+			$idMap[ $sourceEntityId ] = $newIdString;
 		}
 
 	}
@@ -97,14 +109,14 @@ class DataLoader {
 		return $smallerEntities;
 	}
 
-	private function adjustIdsInEntities( array $entities ) : array {
+	private function adjustIdsInEntities( array $entities, array $idMap ) : array {
 		/** @var StatementListProvider $entity */
 		foreach( $entities as $sourceEntityId => $entity ) {
 			// Adjust main IDs
 			if( $entity->getType() === 'item' ) {
-				$entity->setId( new ItemId( $this->idMap[$sourceEntityId] ) );
+				$entity->setId( new ItemId( $idMap[$sourceEntityId] ) );
 			} elseif( $entity->getType() === 'property' ) {
-				$entity->setId( new PropertyId( $this->idMap[$sourceEntityId] ) );
+				$entity->setId( new PropertyId( $idMap[$sourceEntityId] ) );
 			} else {
 				die('ohnoes2');
 			}
@@ -112,11 +124,10 @@ class DataLoader {
 			if( $entity instanceof StatementListProvider && $entity instanceof StatementListHolder ){
 				$newStatements = new StatementList();
 				foreach( $entity->getStatements()->toArray() as $statement ) {
-					$newStatements->addStatement(
-						new Statement(
-							$this->getAdjustedMainsnak( $statement->getMainSnak() )
-						)
-					);
+					$newStatements->addStatement( $this->getAdjustedStatement(
+						$statement,
+						new PropertyId( $idMap[$statement->getMainSnak()->getPropertyId()->getSerialization()] )
+						) );
 				}
 				$entity->setStatements( $newStatements );
 			}
@@ -124,19 +135,27 @@ class DataLoader {
 		return $entities;
 	}
 
-	private function getAdjustedMainsnak( Snak $mainSnak ) {
+	private function getAdjustedStatement( Statement $statement, PropertyId $newPropertyId ) : Statement {
+		return new Statement(
+			$this->getAdjustedMainsnak(
+				$statement->getMainSnak(),
+				$newPropertyId
+			)
+		);
+	}
+
+	private function getAdjustedMainsnak( Snak $mainSnak, PropertyId $newPropertyId ) : Snak {
 		// It would be nice is this sort of thing was in data model?
-		$propertyIdToUse = new PropertyId( $this->idMap[$mainSnak->getPropertyId()->getSerialization()] );
 		if( $mainSnak instanceof PropertyValueSnak ) {
 			return new PropertyValueSnak(
-				$propertyIdToUse,
+				$newPropertyId,
 				$mainSnak->getDataValue()
 			);
 		} elseif( $mainSnak instanceof PropertySomeValueSnak ) {
-			return new PropertySomeValueSnak( $propertyIdToUse );
+			return new PropertySomeValueSnak( $newPropertyId );
 
 		} elseif ( $mainSnak instanceof PropertyNoValueSnak ){
-			return new PropertyNoValueSnak( $propertyIdToUse );
+			return new PropertyNoValueSnak( $newPropertyId );
 		}
 		die('ohnoes3');
 	}
